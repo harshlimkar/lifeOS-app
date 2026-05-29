@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "133563556165",
+    "project_id": "lifeos23",
+    "storage_bucket": "lifeos23.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:133563556165:android:6b8b5b8b0ca0692b5cde2c",
+        "android_client_info": {
+          "package_name": "com.lifeos.lifeos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "133563556165-ns4h8j4heegohfmgfcdl2506npjfersh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8D3p9mnIeA-7i4xxd-JEEAHDykVsAgTw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "133563556165-ns4h8j4heegohfmgfcdl2506npjfersh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
