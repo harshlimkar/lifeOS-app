@@ -8,7 +8,7 @@ Welcome to **LifeOS** — a premium, gamified self-improvement dashboard designe
 
 ### 1. 🔑 Whitelist Authentication & Admin Suite
 - **Password Auth**: Simple, secure email + password authentication.
-- **Admin Dashboard**: Accessible only by designated admin (`192421216.simats@saveetha.com`).
+- **Admin Dashboard**: Accessible only by designated admin.
   - **Invite-Only Access**: Grant/remove sign-up access to new users dynamically.
   - **Automated App Updates**: Publish new versions directly from the dashboard.
   - **Auto-Signup Fallback**: Seamless first-time admin setup (automatically creates the profile if missing).
