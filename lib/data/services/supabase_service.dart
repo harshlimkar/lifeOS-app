@@ -33,10 +33,43 @@ class SupabaseService {
         'total_workout_days': data['totalWorkoutDays'],
         'total_journal_entries': data['totalJournalEntries'],
         'achievements': data['achievements'] ?? [],
+        'height_cm': data['heightCm'],
+        'weight_kg': data['weightKg'],
+        'gender': data['gender'],
+        'age': data['age'],
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e) {
       // Handle error gracefully or let offline cache deal with it
+    }
+  }
+
+  // ── Meal Checklist ─────────────────────────────────────────────────────────
+  Future<Set<String>> loadMealChecklist(String userId, String dateKey) async {
+    try {
+      final response = await _client
+          .from('meal_checklist')
+          .select('meal_id')
+          .eq('user_id', userId)
+          .eq('date_key', dateKey)
+          .eq('completed', true)
+          .timeout(const Duration(seconds: 10));
+      return Set<String>.from((response as List).map((r) => r['meal_id'] as String));
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<void> toggleMealItem(String userId, String dateKey, String mealId, bool completed) async {
+    try {
+      await _client.from('meal_checklist').upsert({
+        'user_id': userId,
+        'date_key': dateKey,
+        'meal_id': mealId,
+        'completed': completed,
+      }, onConflict: 'user_id,date_key,meal_id');
+    } catch (e) {
+      // Silently fail — local state is already updated
     }
   }
 

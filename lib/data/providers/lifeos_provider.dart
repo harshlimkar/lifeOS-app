@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/day_entry.dart';
 import '../../core/constants/app_constants.dart';
 import '../services/supabase_service.dart';
+import '../services/notification_service.dart';
 import 'package:intl/intl.dart';
 
 class LifeOSProvider extends ChangeNotifier {
@@ -23,6 +25,18 @@ class LifeOSProvider extends ChangeNotifier {
   int _totalJournalEntries = 0;
   bool _onboardingComplete = false;
 
+  // Physical profile details
+  double? _heightCm;
+  double? _weightKg;
+  String? _gender;
+  int? _age;
+
+  // Meal checklist
+  Set<String> _mealChecklist = {};
+
+  // Notifications setting
+  bool _nightlyReminderEnabled = true;
+
   // Today's state
   DayEntry? _todayEntry;
   bool _flowCompleted = false;
@@ -38,6 +52,20 @@ class LifeOSProvider extends ChangeNotifier {
   DayEntry? get todayEntry => _todayEntry;
   bool get flowCompleted => _flowCompleted;
   List<DayEntry> get allEntries => _allEntries;
+
+  // Physical profile getters
+  double? get heightCm => _heightCm;
+  double? get weightKg => _weightKg;
+  String? get gender => _gender;
+  int? get age => _age;
+  bool get hasProfileDetails => _heightCm != null && _weightKg != null && _gender != null;
+
+  // Meal checklist getters
+  Set<String> get mealChecklist => _mealChecklist;
+  bool isMealDone(String mealId) => _mealChecklist.contains(mealId);
+
+  // Notifications getter
+  bool get nightlyReminderEnabled => _nightlyReminderEnabled;
 
   int get currentLevel {
     for (int i = AppConstants.levelThresholds.length - 1; i >= 0; i--) {
@@ -91,16 +119,39 @@ class LifeOSProvider extends ChangeNotifier {
     _isInitialized = false;
     notifyListeners();
 
-    // Run all three Supabase fetches IN PARALLEL — ~3x faster than sequential
+    // Run all Supabase fetches IN PARALLEL — ~3x faster than sequential
     await Future.wait([
       _loadProfile(),
       _loadTodayEntry(),
       _loadAllEntries(),
+      _loadMealChecklist(),
+      _loadNotificationSettings(),
     ]);
     _calculateStreak();
 
     _isInitialized = true;
     notifyListeners();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _nightlyReminderEnabled = prefs.getBool('nightly_reminder_enabled') ?? true;
+    
+    final notifSvc = NotificationService();
+    await notifSvc.init();
+    
+    if (_nightlyReminderEnabled) {
+      if (_flowCompleted) {
+        await notifSvc.cancelOngoingReminder();
+      } else {
+        await notifSvc.scheduleNightlyReminder(
+          hour: 21, // 9:00 PM
+          minute: 0,
+          title: 'LifeOS Daily Reminder 🌌',
+          body: 'Finish your daily goals & workout! Keep the streak alive.',
+        );
+      }
+    }
   }
 
   void reset() {
@@ -119,6 +170,11 @@ class LifeOSProvider extends ChangeNotifier {
     _todayEntry = null;
     _flowCompleted = false;
     _allEntries = [];
+    _heightCm = null;
+    _weightKg = null;
+    _gender = null;
+    _age = null;
+    _mealChecklist = {};
     notifyListeners();
   }
 
@@ -138,6 +194,11 @@ class LifeOSProvider extends ChangeNotifier {
       final achievementsList = List<String>.from(data['achievements'] ?? []);
       _unlockedAchievements = Set.from(achievementsList);
       _flowCompleted = data['flow_completed_$todayKey'] ?? false;
+      // Physical details
+      _heightCm = (data['height_cm'] as num?)?.toDouble();
+      _weightKg = (data['weight_kg'] as num?)?.toDouble();
+      _gender = data['gender'] as String?;
+      _age = data['age'] as int?;
     }
   }
 
@@ -155,6 +216,10 @@ class LifeOSProvider extends ChangeNotifier {
       'totalJournalEntries': _totalJournalEntries,
       'achievements': _unlockedAchievements.toList(),
       'flowCompleted_$todayKey': _flowCompleted,
+      'heightCm': _heightCm,
+      'weightKg': _weightKg,
+      'gender': _gender,
+      'age': _age,
     });
   }
 
@@ -301,6 +366,9 @@ class LifeOSProvider extends ChangeNotifier {
     _totalXP += xp;
     _flowCompleted = true;
 
+    // Dismiss any active sticky reminder since the day is successfully completed!
+    await NotificationService().cancelOngoingReminder();
+
     await _saveToday();
     _calculateStreak();
     _checkAchievements();
@@ -405,10 +473,75 @@ class LifeOSProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveProfileDetails({
+    required double heightCm,
+    required double weightKg,
+    required String gender,
+    required int age,
+  }) async {
+    _heightCm = heightCm;
+    _weightKg = weightKg;
+    _gender = gender;
+    _age = age;
+    await _saveProfile();
+    notifyListeners();
+  }
+
+  // ── Notification Center Actions ────────────────────────────────────────────
+  Future<void> toggleNightlyReminder(bool enabled) async {
+    _nightlyReminderEnabled = enabled;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('nightly_reminder_enabled', enabled);
+
+    final notifSvc = NotificationService();
+    if (enabled) {
+      await notifSvc.requestPermissions();
+      await notifSvc.scheduleNightlyReminder(
+        hour: 21, // 9:00 PM
+        minute: 0,
+        title: 'LifeOS Daily Reminder 🌌',
+        body: 'Finish your daily goals & workout! Keep the streak alive.',
+      );
+    } else {
+      await notifSvc.cancelOngoingReminder();
+    }
+  }
+
+  Future<void> triggerTestNotification() async {
+    final notifSvc = NotificationService();
+    await notifSvc.requestPermissions();
+    await notifSvc.showOngoingReminder(
+      title: 'LifeOS Persistent Reminder 🌌',
+      body: 'This is your sticky reminder! Complete your remaining daily tasks.',
+    );
+  }
+
+  Future<void> clearActiveNotification() async {
+    await NotificationService().cancelOngoingReminder();
+  }
+
   Future<void> completeOnboarding() async {
     _onboardingComplete = true;
     await _saveProfile();
     notifyListeners();
+  }
+
+  // ── Meal Checklist ─────────────────────────────────────────────────────────
+  Future<void> _loadMealChecklist() async {
+    _mealChecklist = await _supabaseService.loadMealChecklist(_userId, todayKey);
+  }
+
+  Future<void> toggleMealItem(String mealId) async {
+    final nowDone = !_mealChecklist.contains(mealId);
+    if (nowDone) {
+      _mealChecklist.add(mealId);
+    } else {
+      _mealChecklist.remove(mealId);
+    }
+    notifyListeners();
+    await _supabaseService.toggleMealItem(_userId, todayKey, mealId, nowDone);
   }
 
   // ── Analytics ──────────────────────────────────────────────────────────────

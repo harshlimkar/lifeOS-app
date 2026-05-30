@@ -68,33 +68,6 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(false);
       return true;
     } on AuthException catch (e) {
-      // Auto-signup fallback for designated admin credentials so it works first try
-      if (normalized == kAdminEmail && password == 'Harsh@2007') {
-        try {
-          final res = await _supabase.auth.signUp(email: normalized, password: password);
-          if (res.user != null && res.session == null) {
-            _setLoading(false);
-            _setError('Admin account created! Please check your email to confirm it, or disable "Confirm email" in Supabase Settings -> Providers -> Email.');
-            return false;
-          }
-          await _supabase.auth.signInWithPassword(
-            email: normalized,
-            password: password,
-          );
-          _setLoading(false);
-          return true;
-        } on AuthException catch (signUpError) {
-          if (!signUpError.message.toLowerCase().contains('already registered')) {
-            _setLoading(false);
-            _setError('Failed to auto-create admin account: ${signUpError.message}');
-            return false;
-          }
-        } catch (err) {
-          _setLoading(false);
-          _setError('Admin auto-signup error: $err');
-          return false;
-        }
-      }
       _setLoading(false);
       _setError(_friendlyError(e.message));
       return false;

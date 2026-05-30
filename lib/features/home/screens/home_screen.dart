@@ -8,6 +8,8 @@ import '../../../data/providers/lifeos_provider.dart';
 import '../../daily_flow/screens/daily_flow_screen.dart';
 import '../../analytics/screens/analytics_screen.dart';
 import '../../achievements/screens/achievements_screen.dart';
+import '../../food/screens/food_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _HomeTab(),
     AnalyticsScreen(),
     AchievementsScreen(),
+    FoodScreen(),
   ];
 
   @override
@@ -61,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _NavItem(icon: Icons.home_rounded, label: 'Home', index: 0, selected: _selectedTab == 0, onTap: () => setState(() => _selectedTab = 0)),
           _NavItem(icon: Icons.bar_chart_rounded, label: 'Analytics', index: 1, selected: _selectedTab == 1, onTap: () => setState(() => _selectedTab = 1)),
           _NavItem(icon: Icons.emoji_events_rounded, label: 'Trophies', index: 2, selected: _selectedTab == 2, onTap: () => setState(() => _selectedTab = 2)),
+          _NavItem(icon: Icons.restaurant_menu_rounded, label: 'Food', index: 3, selected: _selectedTab == 3, onTap: () => setState(() => _selectedTab = 3)),
         ],
       ),
     );
@@ -185,12 +189,13 @@ class _HomeTab extends StatelessWidget {
                     ),
                   ).animate().slideX(begin: -0.2, duration: 500.ms),
                   const SizedBox(width: 12),
+                  // Streak badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.neonGreen.withOpacity(0.1),
+                      color: AppTheme.neonGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.neonGreen.withOpacity(0.3)),
+                      border: Border.all(color: AppTheme.neonGreen.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -206,6 +211,44 @@ class _HomeTab extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ).animate().slideX(begin: 0.2, duration: 500.ms),
+                  const SizedBox(width: 8),
+                  // Profile avatar button
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (_, a, __) => const ProfileScreen(),
+                        transitionsBuilder: (_, a, __, child) => SlideTransition(
+                          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                              .animate(CurvedAnimation(parent: a, curve: Curves.easeInOutCubic)),
+                          child: child,
+                        ),
+                        transitionDuration: const Duration(milliseconds: 350),
+                      ),
+                    ),
+                    child: Builder(
+                      builder: (ctx) {
+                        final initials = (provider.userName.isNotEmpty ? provider.userName[0] : 'U').toUpperCase();
+                        return Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppTheme.neonGreenGradient,
+                            boxShadow: [
+                              BoxShadow(color: AppTheme.neonGreen.withValues(alpha: 0.3), blurRadius: 12, spreadRadius: 1),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              initials,
+                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ).animate().slideX(begin: 0.2, duration: 500.ms),
                 ],

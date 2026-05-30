@@ -49,22 +49,22 @@ class AppConstants {
 
   // Workout Split
   static const Map<String, String> workoutSplit = {
-    'Monday': 'Chest + Triceps',
-    'Tuesday': 'Back + Biceps',
-    'Wednesday': 'Shoulders + Core',
-    'Thursday': 'Legs (Quads + Glutes)',
-    'Friday': 'Arms + Chest Finisher',
-    'Saturday': 'Full Body / Cardio',
+    'Monday': 'Back & Biceps',
+    'Tuesday': 'Chest & Triceps',
+    'Wednesday': 'Shoulders',
+    'Thursday': 'Chest & Back',
+    'Friday': 'Arm Day',
+    'Saturday': 'Leg Day',
     'Sunday': 'Active Recovery / Rest',
   };
 
   static const Map<String, List<String>> workoutExercises = {
-    'Chest + Triceps': ['Bench Press 4×8', 'Incline DB Press 3×10', 'Cable Flyes 3×12', 'Tricep Pushdowns 4×12', 'Skull Crushers 3×10', 'Dips to Failure'],
-    'Back + Biceps': ['Deadlifts 4×5', 'Pull-Ups 4×8', 'Barbell Rows 4×8', 'Lat Pulldowns 3×12', 'Barbell Curls 4×10', 'Hammer Curls 3×12'],
-    'Shoulders + Core': ['Overhead Press 4×8', 'Lateral Raises 4×15', 'Face Pulls 3×15', 'Planks 3×60s', 'Cable Crunches 3×15', 'Leg Raises 3×15'],
-    'Legs (Quads + Glutes)': ['Squats 4×6', 'Romanian Deadlifts 3×10', 'Leg Press 4×12', 'Lunges 3×12', 'Hip Thrusts 4×12', 'Calf Raises 4×20'],
-    'Arms + Chest Finisher': ['EZ Bar Curls 4×10', 'Tricep Overhead Extension 4×10', 'Preacher Curls 3×12', 'Tricep Dips 3×12', 'Push-Ups 3×20', 'Cable Curls 3×15'],
-    'Full Body / Cardio': ['Burpees 4×15', 'Jump Squats 3×20', 'Mountain Climbers 3×30s', 'KB Swings 4×15', 'Box Jumps 3×10', '20 min HIIT Cardio'],
+    'Back & Biceps': ['Deadlifts 4×5', 'Pull-Ups 4×8', 'Barbell Rows 4×8', 'Lat Pulldowns 3×12', 'Barbell Curls 4×10', 'Hammer Curls 3×12'],
+    'Chest & Triceps': ['Bench Press 4×8', 'Incline DB Press 3×10', 'Cable Flyes 3×12', 'Tricep Pushdowns 4×12', 'Skull Crushers 3×10', 'Dips to Failure'],
+    'Shoulders': ['Overhead Press 4×8', 'Lateral Raises 4×15', 'Face Pulls 3×15', 'Front DB Raises 3×12', 'Rear Delt Flyes 3×15', 'Shrugs 4×12'],
+    'Chest & Back': ['Flat DB Bench Press 4×8', 'Bent Over Rows 4×8', 'Incline DB Flyes 3×12', 'Lat Pulldowns 3×10', 'Push-ups to Failure', 'Chin-ups 3×8'],
+    'Arm Day': ['EZ Bar Curls 4×10', 'Tricep Overhead Extension 4×10', 'Preacher Curls 3×12', 'Tricep Dips 3×12', 'Push-Ups 3×20', 'Cable Curls 3×15'],
+    'Leg Day': ['Squats 4×6', 'Romanian Deadlifts 3×10', 'Leg Press 4×12', 'Lunges 3×12', 'Hip Thrusts 4×12', 'Calf Raises 4×20'],
     'Active Recovery / Rest': ['Light Stretching 15min', 'Yoga Flow 20min', 'Walk 30min', 'Foam Rolling 10min', 'Mobility Work 15min'],
   };
 
