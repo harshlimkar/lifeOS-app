@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/day_entry.dart';
 import '../../core/constants/app_constants.dart';
@@ -11,6 +12,7 @@ class LifeOSProvider extends ChangeNotifier {
 
   String _userId = '';
   bool _isInitialized = false;
+  bool _isLoading = false;
   bool get isInitialized => _isInitialized;
 
   // User profile
@@ -114,42 +116,58 @@ class LifeOSProvider extends ChangeNotifier {
 
   // ── Init ───────────────────────────────────────────────────────────────────
   Future<void> init(String userId) async {
-    if (_isInitialized && _userId == userId) return; // already loaded
+    // If already loaded or currently fetching in the background, return immediately to prevent infinite request spamming loops
+    if (_userId == userId && (_isInitialized || _isLoading)) return;
+    
     _userId = userId;
     _isInitialized = false;
+    _isLoading = true;
     notifyListeners();
-
-    // Run all Supabase fetches IN PARALLEL — ~3x faster than sequential
-    await Future.wait([
-      _loadProfile(),
-      _loadTodayEntry(),
-      _loadAllEntries(),
-      _loadMealChecklist(),
-      _loadNotificationSettings(),
-    ]);
-    _calculateStreak();
-
-    _isInitialized = true;
-    notifyListeners();
+ 
+    try {
+      // Run all Supabase fetches IN PARALLEL — ~3x faster than sequential
+      await Future.wait([
+        _loadProfile(),
+        _loadTodayEntry(),
+        _loadAllEntries(),
+        _loadMealChecklist(),
+        _loadNotificationSettings(),
+      ]);
+      _calculateStreak();
+      _isInitialized = true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error during LifeOS data initialization: $e');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadNotificationSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    _nightlyReminderEnabled = prefs.getBool('nightly_reminder_enabled') ?? true;
-    
-    final notifSvc = NotificationService();
-    await notifSvc.init();
-    
-    if (_nightlyReminderEnabled) {
-      if (_flowCompleted) {
-        await notifSvc.cancelOngoingReminder();
-      } else {
-        await notifSvc.scheduleNightlyReminder(
-          hour: 21, // 9:00 PM
-          minute: 0,
-          title: 'LifeOS Daily Reminder 🌌',
-          body: 'Finish your daily goals & workout! Keep the streak alive.',
-        );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _nightlyReminderEnabled = prefs.getBool('nightly_reminder_enabled') ?? true;
+      
+      final notifSvc = NotificationService();
+      await notifSvc.init();
+      
+      if (_nightlyReminderEnabled) {
+        if (_flowCompleted) {
+          await notifSvc.cancelOngoingReminder();
+        } else {
+          await notifSvc.scheduleNightlyReminder(
+            hour: 21, // 9:00 PM
+            minute: 0,
+            title: 'LifeOS Daily Reminder 🌌',
+            body: 'Finish your daily goals & workout! Keep the streak alive.',
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error initializing notifications: $e');
       }
     }
   }
@@ -366,13 +384,19 @@ class LifeOSProvider extends ChangeNotifier {
     _totalXP += xp;
     _flowCompleted = true;
 
-    // Dismiss any active sticky reminder since the day is successfully completed!
-    await NotificationService().cancelOngoingReminder();
+    // Trigger notification cancellation in the background
+    final cancelNotification = NotificationService().cancelOngoingReminder();
 
-    await _saveToday();
     _calculateStreak();
     _checkAchievements();
-    await _saveProfile();
+
+    // Execute all asynchronous calls in parallel for ultra-low latency on mobile APIs
+    await Future.wait([
+      _saveToday(),
+      _saveProfile(),
+      cancelNotification,
+    ]);
+
     notifyListeners();
   }
 
@@ -405,9 +429,7 @@ class LifeOSProvider extends ChangeNotifier {
     // Correct total XP
     _totalXP = _totalXP - oldXp + xp;
 
-    await _supabaseService.saveDayEntry(_userId, entry);
-
-    // Update local cache
+    // Update local cache immediately so local state is instantly updated in UI
     final idx = _allEntries.indexWhere((e) => e.dateKey == entry.dateKey);
     if (idx >= 0) {
       _allEntries[idx] = entry;
@@ -421,7 +443,13 @@ class LifeOSProvider extends ChangeNotifier {
 
     _calculateStreak();
     _checkAchievements();
-    await _saveProfile();
+
+    // Execute both independent database saving queries concurrently
+    await Future.wait([
+      _supabaseService.saveDayEntry(_userId, entry),
+      _saveProfile(),
+    ]);
+
     notifyListeners();
   }
 

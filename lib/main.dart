@@ -101,7 +101,7 @@ class _AppRootState extends State<_AppRoot> {
 
     // Regular user → init data immediately (no postFrameCallback delay)
     final uid = auth.userId;
-    if (_lastUserId != uid || !provider.isInitialized) {
+    if (_lastUserId != uid) {
       _lastUserId = uid;
       // Fire-and-forget — captures provider before async gap
       final lifeosProvider = context.read<LifeOSProvider>();

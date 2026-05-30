@@ -23,6 +23,10 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+    if (kIsWeb) {
+      _initialized = true;
+      return;
+    }
 
     // 1. Initialize Timezones
     tz.initializeTimeZones();
@@ -63,6 +67,7 @@ class NotificationService {
 
   /// Request permissions on Android 13+ and iOS
   Future<bool> requestPermissions() async {
+    if (kIsWeb) return true;
     if (Platform.isAndroid) {
       final androidImplementation =
           _notificationsPlugin.resolvePlatformSpecificImplementation<
@@ -92,6 +97,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (kIsWeb) return;
     await init(); // Ensure initialization
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -121,6 +127,7 @@ class NotificationService {
 
   /// Cancel/Dismiss the sticky notification
   Future<void> cancelOngoingReminder() async {
+    if (kIsWeb) return;
     await _notificationsPlugin.cancel(_notificationId);
   }
 
@@ -131,6 +138,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (kIsWeb) return;
     await init(); // Ensure initialization
 
     // First cancel any existing schedule to avoid duplication
@@ -164,7 +172,7 @@ class NotificationService {
       body,
       scheduledTime,
       platformDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // RECURS DAILY
